@@ -11,7 +11,7 @@
    1. Extract the structured text from the pdf
         ##### Input: PDF
         1. Extract text itself
-        2. Identify headings and subheadings (includes table labels and captions   for visualizations)
+        2. Identify headings and subheadings
         ##### Output_1: The outline of the document using text w/ tabs
    2. Summarization of the lowest levels of content (for now: paragraph)
         ##### Input: Output_1
@@ -26,6 +26,5 @@
         ##### Input: Output_2 (TXT w/ Tabs)
         1. Identifying level of association: the number of tabs detected at the beginning of a line
         2. Use Postorder Tree Traversal to create mind map's nodes
-        3. Each node will hyperlink to the portion of the orginal pdf file as a webpage
         ##### Output_3: Interactive Mind Map = Visual Research Paper
 
