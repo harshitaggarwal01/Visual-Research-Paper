@@ -1,0 +1,1486 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 /home/lopez/grobid/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Learning to Extract Semantic Structure from Documents Using Multimodal Fully Convolutional Neural Networks</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher>IEEE</publisher>
+				<availability status="unknown"><p>Copyright IEEE</p>
+				</availability>
+				<date type="published" when="2017-07">2017-07</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Xiao</forename><surname>Yang</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">The Pennsylvania State University † Adobe Research</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Ersin</forename><surname>Yumer</surname></persName>
+							<email>yumer@adobe.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">The Pennsylvania State University † Adobe Research</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Paul</forename><surname>Asente</surname></persName>
+							<email>asente@adobe.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">The Pennsylvania State University † Adobe Research</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Mike</forename><surname>Kraley</surname></persName>
+							<email>mkraley@adobe.com</email>
+							<affiliation key="aff0">
+								<orgName type="institution">The Pennsylvania State University † Adobe Research</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Daniel</forename><surname>Kifer</surname></persName>
+							<email>dkifer@cse.psu.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution">The Pennsylvania State University † Adobe Research</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><forename type="middle">Lee</forename><surname>Giles</surname></persName>
+							<email>giles@ist.psu.edu</email>
+							<affiliation key="aff0">
+								<orgName type="institution">The Pennsylvania State University † Adobe Research</orgName>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Learning to Extract Semantic Structure from Documents Using Multimodal Fully Convolutional Neural Networks</title>
+					</analytic>
+					<monogr>
+						<title level="m">2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)</title>
+						<imprint>
+							<publisher>IEEE</publisher>
+							<date type="published" when="2017-07" />
+						</imprint>
+					</monogr>
+					<idno type="DOI">10.1109/cvpr.2017.462</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.6.2-SNAPSHOT" ident="GROBID" when="2020-09-19T08:16+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>We present an end-to-end, multimodal, fully convolutional network for extracting semantic structures from document images. We consider document semantic structure extraction as a pixel-wise segmentation task, and propose a unified model that classifies pixels based not only on their visual appearance, as in the traditional page segmentation task, but also on the content of underlying text. Moreover, we propose an efficient synthetic document generation process that we use to generate pretraining data for our network. Once the network is trained on a large set of synthetic documents, we fine-tune the network on unlabeled real documents using a semi-supervised approach. We systematically study the optimum network architecture and show that both our multimodal approach and the synthetic data pretraining significantly boost the performance.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Introduction</head><p>Document semantic structure extraction (DSSE) is an actively-researched area dedicated to understanding images of documents. The goal is to split a document image into regions of interest and to recognize the role of each region. It is usually done in two steps: the first step, often referred to as page segmentation, is appearance-based and attempts to distinguish text regions from regions like figures, tables and line segments. The second step, often referred to as logical structure analysis, is semantics-based and categorizes each region into semantically-relevant classes like paragraph and caption.</p><p>In this work, we propose a unified multimodal fully convolutional network (MFCN) that simultaneously identifies both appearance-based and semantics-based classes. It is a generalized page segmentation model that additionally performs fine-grained recognition on text regions: text regions are assigned specific labels based on their semantic functionality in the document. Our approach simplifies DSSE and better supports document image understanding.</p><p>We consider DSSE as a pixel-wise segmentation problem: each pixel is labeled as background, figure, table, paragraph, section heading, list, caption, etc. We show that our MFCN model trained in an end-to-end, pixels-topixels manner on document images exceeds the state-ofthe-art significantly. It eliminates the need to design complex heuristic rules and extract hand-crafted features <ref type="bibr" target="#b29">[30,</ref><ref type="bibr" target="#b21">22,</ref><ref type="bibr" target="#b20">21,</ref><ref type="bibr" target="#b45">46,</ref><ref type="bibr" target="#b3">4]</ref>.</p><p>In many cases, regions like section headings or captions can be visually identified. In <ref type="figure" target="#fig_0">Fig. 1 (a)</ref>, one can easily recognize the different roles of the same name. However, a robust DSSE system needs the semantic information of the text to disambiguate possible false identifications. For example, in <ref type="figure" target="#fig_0">Fig. 1 (b)</ref>, the text in the large font might look like section heading, but it does not function that way; the lines beginning with dashes might be mislabeled as a list.</p><p>To this end, our multimodal fully convolutional network is designed to leverage the textual information in the document as well. To incorporate textual information in a CNNbased architecture, we build a text embedding map and feed it to our MFCN. More specifically, we embed each sentence and map the embedding to the corresponding pixels where the sentence is represented in the document. <ref type="figure">Fig. 2</ref> summarizes the architecture of the proposed MFCN model. Our <ref type="figure">Figure 2</ref>: The architecture of the proposed multimodal fully convolutional neural network. It consists of four parts: an encoder that learns a hierarchy of feature representations, a decoder that outputs segmentation masks, an auxiliary decoder for unsupervised reconstruction, and a bridge that merges visual representations and textual representations. The auxiliary decoder only exists during training. model consists of four parts: an encoder that learns a hierarchy of feature representations, a decoder that outputs segmentation masks, an auxiliary decoder for reconstruction during training, and a bridge that merges visual representations and textual representations. We assume that the document text has been pre-extracted. For document images this can be done with modern OCR engines <ref type="bibr" target="#b46">[47,</ref><ref type="bibr" target="#b0">1,</ref><ref type="bibr" target="#b1">2]</ref>.</p><p>One of the bottlenecks in training fully convolutional networks is the need for pixel-wise ground truth data. Previous document understanding datasets <ref type="bibr" target="#b30">[31,</ref><ref type="bibr" target="#b43">44,</ref><ref type="bibr" target="#b49">50,</ref><ref type="bibr" target="#b5">6]</ref> are limited by both their small size and the lack of fine-grained semantic labels such as section headings, lists, or figure and table captions. To address these issues, we propose an efficient synthetic document generation process and use it to generate large-scale pretraining data for our network. Furthermore, we propose two unsupervised tasks for better generalization to real documents: reconstruction and consistency tasks. The former enables better representation learning by reconstructing the input image, whereas the latter encourages pixels belonging to the same regions have similar representation.</p><p>Our main contributions are summarized as follows:</p><p>• We propose an end-to-end, unified network to address document semantic structure extraction. Unlike previous two-step processes, we simultaneously identify both appearance-based and semantics-based classes.</p><p>• Our network supports both supervised training on image and text of documents, as well as unsupervised auxiliary training for better representation learning.</p><p>• We propose a synthetic data generation process and use it to synthesize a large-scale dataset for training the supervised part of our deep MFCN model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Background</head><p>Page Segmentation. Most earlier works on page segmentation <ref type="bibr" target="#b29">[30,</ref><ref type="bibr" target="#b21">22,</ref><ref type="bibr" target="#b20">21,</ref><ref type="bibr" target="#b45">46,</ref><ref type="bibr" target="#b3">4,</ref><ref type="bibr" target="#b44">45]</ref> fall into two categories: bottom-up and top-down approaches. Bottom-up approaches <ref type="bibr" target="#b29">[30,</ref><ref type="bibr" target="#b45">46,</ref><ref type="bibr" target="#b3">4]</ref> first detect words based on local features (white/black pixels or connected components), then sequentially group words into text lines and paragraphs. However, such approaches suffer from the identification and grouping of connected components being time-consuming. Top-down approaches <ref type="bibr" target="#b21">[22,</ref><ref type="bibr" target="#b20">21]</ref> iteratively split a page into columns, blocks, text lines and words. With both of these approaches it is difficult to correctly segment documents with complex layout, for example a document with nonrectangular figures <ref type="bibr" target="#b37">[38]</ref>.</p><p>With recent advances in deep convolutional neural networks, several neural-based models have been proposed. Chen et al. <ref type="bibr" target="#b11">[12]</ref> applied a convolutional auto-encoder to learn features from cropped document image patches, then use these features to train a SVM <ref type="bibr" target="#b14">[15]</ref> classifier. Vo et al. <ref type="bibr" target="#b51">[52]</ref> proposed using FCN to detect lines in handwritten document images. However, these methods are strictly restricted to visual cues, and thus are not able to discover the semantic meaning of the underlying text.</p><p>Logical Structure Analysis. Logical structure is defined as a hierarchy of logical components in documents, such as section headings, paragraphs and lists <ref type="bibr" target="#b37">[38]</ref>. Early work in logical structure discovery <ref type="bibr" target="#b17">[18,</ref><ref type="bibr" target="#b28">29,</ref><ref type="bibr" target="#b23">24,</ref><ref type="bibr" target="#b13">14]</ref> focused on using a set of heuristic rules based on the location, font and text of each sentence. Shilman et al. <ref type="bibr" target="#b44">[45]</ref> modeled document layout as a grammar and used machine learning to minimize the cost of a invalid parsing. Luong et al. <ref type="bibr" target="#b34">[35]</ref> proposed using a conditional random fields model to jointly label each sentence based on several hand-crafted features. However, the performance of these methods is limited by their reliance on hand-crafted features, which cannot capture the highly semantic context. Semantic Segmentation. Large-scale annotations <ref type="bibr" target="#b31">[32]</ref> and the development of deep neural network approaches such as the fully convolutional network (FCN) <ref type="bibr" target="#b32">[33]</ref> have led to rapid improvement of the accuracy of semantic segmentation <ref type="bibr" target="#b12">[13,</ref><ref type="bibr" target="#b41">42,</ref><ref type="bibr" target="#b40">41,</ref><ref type="bibr" target="#b53">54]</ref>. However, the originally proposed FCN model has several limitations, such as ignoring small objects and mislabeling large objects due to the fixed receptive field size. To address this issue, Noh et al. <ref type="bibr" target="#b40">[41]</ref> proposed using unpooling, a technique that reuses the pooled "location" at the up-sampling stage. Pinheiro et al. <ref type="bibr" target="#b42">[43]</ref> attempted to use skip connections to refine segmentation boundaries. Our model addresses this issue by using a dilated block, inspired by dilated convolutions <ref type="bibr" target="#b53">[54]</ref> and recent work <ref type="bibr" target="#b48">[49,</ref><ref type="bibr" target="#b22">23]</ref> that groups several layers together . We further investigate the effectiveness of different approaches to optimize our network architecture.</p><p>Collecting pixel-wise annotations for thousands or millions of images requires massive labor and cost. To this end, several methods <ref type="bibr" target="#b41">[42,</ref><ref type="bibr" target="#b55">56,</ref><ref type="bibr" target="#b33">34]</ref> have been proposed to harness weak annotations (bounding-box level or image level annotations) in neural network training. Our consistency loss relies on similar intuition but does not require a "class label" for each bounding box.</p><p>Unsupervised Learning. Several methods have been proposed to use unsupervised learning to improve supervised learning tasks. Mairal et al. <ref type="bibr" target="#b35">[36]</ref> proposed a sparse coding method that learns sparse local features by sparsityconstrained reconstruction loss functions. Zhao et al. <ref type="bibr" target="#b57">[58]</ref> proposed a Stacked What-Where Auto-Encoder that uses unpooling during reconstruction. By injecting noise into the input and the middle features, a denoising auto-encoder <ref type="bibr" target="#b50">[51]</ref> can learn robust filters that recover uncorrupted input. The main focus in unsupervised learning has been image-level classification and generative approaches, whereas in this paper we explore the potential of such methods for pixel-wise semantic segmentation.</p><p>Wen et al. <ref type="bibr" target="#b52">[53]</ref> recently proposed a center loss that encourages data samples with the same label to have a similar visual representation. Similarly, we introduce an intra-class consistency constraint. However, the "center" for each class in their loss is determined by data samples across the whole dataset, while in our case the "center" is locally determined by pixels within the same region in each image.</p><p>Language and Vision. Several joint learning tasks such as image captioning <ref type="bibr" target="#b15">[16,</ref><ref type="bibr" target="#b27">28]</ref>, visual question answering <ref type="bibr" target="#b4">[5,</ref><ref type="bibr" target="#b19">20,</ref><ref type="bibr" target="#b36">37]</ref>, and one-shot learning <ref type="bibr" target="#b18">[19,</ref><ref type="bibr" target="#b47">48,</ref><ref type="bibr" target="#b10">11]</ref> have demonstrated the significant impact of using textual and visual representations in a joint framework. Our work is unique in that we use textual embedding directly for a seg-mentation task for the first time, and we show that our approach improves the results of traditional segmentation approaches that only use visual cues.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Method</head><p>Our method does supervised training for pixel-wise segmentation with a specialized multimodal fully convolutional network that uses a text embedding map jointly with the visual cues. Moreover, our MFCN architecture also supports two unsupervised learning tasks to improve the learned document representation: a reconstruction task based on an auxiliary decoder and a consistency task evaluated in the main decoder branch along with the per-pixel segmentation loss.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1.">Multimodal Fully Convolutional Network</head><p>As shown in <ref type="figure">Fig. 2</ref>, our MFCN model has four parts: an encoder, two decoders and a bridge. The encoder and decoder parts roughly follow the architecture guidelines set forth by Noh et al. <ref type="bibr" target="#b40">[41]</ref>. However, several changes have been made to better address document segmentation.</p><p>First, we observe that several semantic-based classes such as section heading and caption usually occupy relatively small areas. Moreover, correctly identifying certain regions often relies on small visual cues, like lists being identified by small bullets or numbers in front of each item. This suggests that low-level features need to be used. However, because max-pooling naturally loses information during downsampling, FCN often performs poorly for small objects. Long et al. <ref type="bibr" target="#b32">[33]</ref> attempt to avoid this problem using skip connections. However, simply averaging independent predictions based on features at different scales does not provide a satisfying solution. Low-level representations, limited by the local receptive field, are not aware of objectlevel semantic information; on the other hand, high-level features are not necessarily aligned consistently with object boundaries because CNN models are invariant to translation. We propose an alternative skip connection implementation, illustrated by the blue arrows in <ref type="figure">Fig. 2</ref>, similar to that used in the independent work SharpMask <ref type="bibr" target="#b42">[43]</ref>. However, they use bilinear upsampling after skip connection while we use unpooling to preserve more spatial information.</p><p>We also notice that broader context information is needed to identify certain objects. For an instance, it is often difficult to tell the difference between a list and several paragraphs by only looking at parts of them. In <ref type="figure">Fig. 3</ref>, to correctly segment the right part of the list, the receptive fields must be large enough to capture the bullets on the left. Inspired by the Inception architecture <ref type="bibr" target="#b48">[49]</ref> and dilated convolution <ref type="bibr" target="#b53">[54]</ref>, we propose a dilated convolution block, which is illustrated in <ref type="figure" target="#fig_1">Fig. 4 (left)</ref>. Each dilated convolution block consists of 5 dilated convolutions with a 3 × 3 kernel size and a dilation d = 1, 2, 4, 8, 16. <ref type="figure">Figure 3</ref>: A cropped document image and its segmentation mask generated by our model. Note that the top-right corner of the list is yellow instead of cyan, indicating that it has been mislabeled as a paragraph.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2.">Text Embedding Map</head><p>Traditional image semantic segmentation models learn the semantic meanings of objects from a visual perspective. Our task, however, also requires understanding the text in images from a linguistic perspective. Therefore, we build a text embedding map and feed it to our multimodal model to make use of both visual and textual representations.</p><p>We treat a sentence as the minimum unit that conveys certain semantic meanings, and represent it using a lowdimensional vector. Our sentence embedding is built by averaging embeddings for individual words. This is a simple yet effective method that has been shown to be useful in many applications, including sentiment analysis <ref type="bibr" target="#b25">[26]</ref> and text classification <ref type="bibr" target="#b26">[27]</ref>. Using such embeddings, we create a text embedding map as follows: for each pixel inside the area of a sentence, we use the corresponding sentence embedding as the input. Pixels that belong to the same sentence thus share the same embedding. Pixels that do not belong to any sentences will be filled with zero vectors. For a document image of size H × W , this process results in an embedding map of size N × H × W if the learned sentence embeddings are N -dimensional vectors. The embedding map is later concatenated with a feature response along the number-of-channel dimensions (see <ref type="figure">Fig. 2</ref>).</p><p>Specifically, our word embedding is learned using the skip-gram model <ref type="bibr" target="#b38">[39,</ref><ref type="bibr" target="#b39">40]</ref>. <ref type="figure" target="#fig_1">Fig. 4 (right)</ref> shows the basic diagram. Let V be the number of words in a vocabulary and w be a V -dimensional one-hot vector representing a word. The training objective is to find a N -dimensional (N ≪ V ) vector representation for each word that is useful for predicting the neighboring words. More formally, given a sequence of words</p><formula xml:id="formula_0">[w 1 , w 2 , • • • , w T ]</formula><p>, we maximize the average log probability</p><formula xml:id="formula_1">1 T T t=1 −C≤j≤C,j =0 logP (w t+j |w t )<label>(1)</label></formula><p>where T is the length of the sequence and C is the size of the context window. The probability of outputting a word w o given an input word w i is defined using softmax:</p><formula xml:id="formula_2">P (w o |w i ) = exp(v ′ wo ⊤ v wi ) V w=1 exp(v ′ w ⊤ v wi )<label>(2)</label></formula><p>where v w and v ′ w are the "input" and "output" Ndimensional vector representations of w.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.3.">Unsupervised Tasks</head><p>Although our synthetic documents (Sec. 4) provide a large amount of labeled data for training, they are limited in the variations of their layouts. To this end, we define two unsupervised loss functions to make use of real documents and to encourage better representation learning.</p><p>Reconstruction Task. It has been shown that reconstruction can help learning better representations and therefore improves performance for supervised tasks <ref type="bibr" target="#b57">[58,</ref><ref type="bibr" target="#b56">57]</ref>. We thus introduce a second decoder pathway <ref type="figure">(Fig. 2 -axil</ref> for a specific l is therefore defined as</p><formula xml:id="formula_3">L (l) rec = 1 C l H l W l a l −ã l 2 2 , l = 0, 1, 2, • • • L<label>(3)</label></formula><p>Consistency Task. Pixel-wise annotations are laborintensive to obtain, however it is relatively easy to get a set of bounding boxes for detected objects in a document. For documents in PDF format, one can find bounding boxes by analyzing the rendering commands in the PDF files (See our supplementary document for typical examples). Even if their labels remain unknown, these bounding boxes are still beneficial: they provide knowledge of which parts of a document belongs to the same objects and thus should not be segmented into different fragments.</p><p>By building on the intuition that regions belonging to same objects should have similar feature representations, we define the consistency task loss L cons as follows. Let</p><formula xml:id="formula_4">p (i,j) (i = 1, 2, • • • H, j = 1, 2, • • • W )</formula><p>be activations at location (i, j) in a feature map of size C × H × W , and b be the rectangular area in a bounding box. Let each rectangular area b is of size H b × W b . Then, for each b ∈ B, L cons will be given by</p><formula xml:id="formula_5">L cons = 1 H b W b (i,j)∈b p (i,j) − p (b) 2 2<label>(4)</label></formula><formula xml:id="formula_6">p (b) = 1 H b W b (i,j)∈b p (i,j)<label>(5)</label></formula><p>Minimizing consistency loss L cons encourages intra-region consistency.</p><p>The consistency loss L cons is differentiable and can be optimized using stochastic gradient descent. The gradient of L cons with respect to</p><formula xml:id="formula_7">p (i,j) is ∂L cons ∂p (i,j) = 2 H 2 b W 2 b (p (i,j) − p (b) )(H b W b − 1)+ 2 H 2 b W 2 b (u,v)∈b (u,v) =(i,j) (p (b) − p (u,v) )<label>(6)</label></formula><p>since H b W b ≫ 1, for efficiency it can be approximated by:</p><formula xml:id="formula_8">∂L cons ∂p (i,j) ≈ 2 H b W b p (i,j) − p (b) .<label>(7)</label></formula><p>We use the unsupervised consistency loss, L cons , as a loss layer, that is evaluated at the main decoder branch (blue branch in <ref type="figure">Fig. 2</ref>) along with supervised segmentation loss.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">Synthetic Document Data</head><p>Since our MFCN aims to generate a segmentation mask of the whole document image, pixel-wise annotations are required for the supervised task. While there are several publicly available datasets for page segmentation <ref type="bibr" target="#b43">[44,</ref><ref type="bibr" target="#b49">50,</ref><ref type="bibr" target="#b5">6]</ref>, there are only a few hundred to a few thousand pages in each. Furthermore, the types of labels are limited, for example to text, figure and table, however our goal is to perform a much more granular segmentation.</p><p>To address these issues, we created a synthetic data engine, capable of generating large-scale, pixel-wise annotated documents.</p><p>Our synthetic document engine uses two methods to generate documents. The first produces completely automated and random layout of partial data scraped from the web. More specifically, we generate LaTeX source files in which paragraphs, figures, tables, captions, section headings and lists are randomly arranged to make up single, double, or triple-column PDFs. Candidate figures include academicstyle figures and graphic drawings downloaded using web image search, and natural images from MS COCO <ref type="bibr" target="#b31">[32]</ref>, which associates each image with several captions. Candidate tables are downloaded using web image search. Various queries are used to increase the diversity of downloaded tables. Since our MFCN model relies on the semantic meaning of text to make prediction, the content of text regions (paragraph, section heading, list, caption) must be carefully selected:</p><p>• For paragraphs, we randomly sample sentences from a 2016 English Wikipedia dump <ref type="bibr" target="#b2">[3]</ref>.</p><p>• For section headings, we only sample sentences and phrases that are section or subsection headings in the "Contents" block in a Wikipedia page.</p><p>• For lists, we ensure that all items in a list come from the same Wikipedia page.</p><p>• For captions, we either use the associated caption (for images from MS COCO) or the title of the image in web image search, which can be found in the span with class name "irc pt".</p><p>To further increase the complexity of the generated document layouts, we collected and labeled 271 documents with varied, complicated layouts. We then randomly replaced each element with a standalone paragraph, figure, table, caption, section heading or list generated as stated above.</p><p>In total, our synthetic dataset contains 135,000 document images. Examples of our synthetic documents are shown in <ref type="figure" target="#fig_2">Fig. 5</ref>. Please refer to our supplementary document for more examples of synthetic documents and individual elements used in the generation process. <ref type="figure">Fig. 2</ref> summarizes the architecture of our model. The auxiliary decoder only exists in the training phase. All convolutional layers have a 3 × 3 kernel size and a stride of 1. The pooling (in the encoders) and unpooling (in the decoders) have a kernel size of 2 × 2. We adopt batch normalization <ref type="bibr" target="#b24">[25]</ref> immediately after each convolution and before all non-linear functions.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">Implementation Details</head><p>We perform per-channel mean subtraction and resize each input image so that its longer side is less than 384 pixels. No other pre-processing is applied. We use Adadelta <ref type="bibr" target="#b54">[55]</ref> with a mini-batch size of 2. During semisupervised training, mini-batches of synthetic and real documents are used alternatively. For synthetic documents, both per-pixel classification loss and the unsupervised losses are active at back-propagation, while for real documents, only the unsupervised losses are active. Since the labels are unbalanced (e.g. the area of paragraphs is much larger than that of caption), class weights for the perpixel classification loss are set differently according to the total number of pixels in each class in the training set.</p><p>For text embedding, we represent each word as a 128dimensional vector and train a skip-gram model on the 2016 English Wikipedia dump <ref type="bibr" target="#b2">[3]</ref>. Embeddings for outof-dictionary words are obtained following Bojanowski et al. <ref type="bibr" target="#b8">[9]</ref>. We use Tesseract <ref type="bibr" target="#b46">[47]</ref> as our OCR engine.</p><p>Post-processing. We apply an optional post-processing step as a cleanup strategy for segment masks. For documents in PDF format, we obtain a set of candidate bounding boxes by analyzing the PDF format to find element boxes. We then refine the segmentation masks by first calculating the average class probability for pixels belonging to the same box, followed by assigning the most likely label to these pixels.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.">Experiments</head><p>We used three datasets for evaluations: ICDAR2015 <ref type="bibr" target="#b5">[6]</ref>, SectLabel <ref type="bibr" target="#b34">[35]</ref> and our new dataset named DSSE-200. ICDAR2015 <ref type="bibr" target="#b5">[6]</ref> is a dataset used in the biennial IC-DAR page segmentation competitions <ref type="bibr" target="#b6">[7]</ref> focusing more on appearance-based regions. The evaluation set of IC-DAR2015 consists of 70 sampled pages from contemporary magazines and technical articles. SectLabel <ref type="bibr" target="#b34">[35]</ref> consists of 40 academic papers with 347 pages in the field of computer science. Each text line in these papers is manually assigned a semantics-based label such as text, section heading or list item. In addition to these two datasets, we introduce DSSE-200 1 , which provides both appearance-based and semantics-based labels. DSSE-200 contains 200 pages from magazines and academic papers. Regions in a page are assigned labels from the following dictionary: figure, table, section, caption, list and paragraph. Note that DSSE-200 has a more granular segmentation than previously released benchmark datasets.</p><p>The performance is measured in terms of pixel-wise intersection-over-union (IoU), which is standard in semantic segmentation tasks. We optimize the architecture of our MFCN model based on the DSSE-200 dataset since it contains both appearance-based and semantics-based labels. Sec. 6.4 compares our results to state-of-the-art methods on the ICDAR2015 and SectLabel datasets.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.1.">Ablation Experiment on Model Architecture</head><p>We first systematically evaluate the effectiveness of different network architectures. Results are shown in <ref type="table" target="#tab_1">Table 1</ref>. Note that these results do not incorporate textual information or unsupervised learning tasks. The purpose of this experiment is to find the best "base" architecture to be used in the following experiments. All models are trained from scratch and evaluated on the DSSE-200 dataset.</p><p>As a simple baseline <ref type="table" target="#tab_1">(Table 1 Model1</ref>), we train a plain encoder-decoder style model for document segmentation. It consists of a feed-forward convolutional network as an encoder, and a decoder implemented by a fully convolutional network. Upsampling is done by bilinear interpolation. This model achieves a mean IoU of 61.4%.</p><p>Next, we add skip connections to the model, resulting in Model2. Note that this model is similar to the SharpMask model. We observe a mean IoU of 65.4%, 4% better than the base model. The improvements are even more significant for small objects like captions.</p><p>We further evaluate the effectiveness of replacing bilinear upsampling with unpooling, giving Model3. All upsampling layers in Model2 are replaced by unpooling while other parts are kept unchanged. Doing so results in a significant improvement for mean IoU (65.4% vs. 71.2%). This suggests that the pooled index should not be discarded during decoding. These indexes are helpful to disambiguate the location information when constructing the segmentation mask in the decoder.</p><p>Finally, we investigate the use of dilated convolutions. Model3 is equivalent to using dilated convolution when d = 1. Model4 sets d = 8 while Model5 uses the dilated block illustrated in <ref type="figure" target="#fig_1">Fig. 4 (left)</ref>. The number of output channels are adjusted such that the total number of parame- <ref type="figure">Figure 6</ref>: Example real documents and their corresponding segmentation. Top: DSSE-200. Middle: ICDAR2015. Bottom: SectLabel. Since these documents are not in PDF format, the simple post-processing in Sec. 5 can not be applied. One may consider exploiting a CRF <ref type="bibr" target="#b12">[13]</ref> to refine the segmentation, but that is beyond the main focus of this paper. Segmentation label colors are: <ref type="figure">figure ,</ref>  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.2.">Adding Textual Information</head><p>We now investigate the importance of textual information in our multimodal model. We take the best architecture, Model5, as our vision-only model, and incorporate a text embedding map via a bridge module depicted in <ref type="figure">Fig. 2</ref>. This combined model is fine-tuned on our synthetic documents. As shown in <ref type="table">Table 2</ref>, using text as well improves the performance for textual classes. The accuracy for section heading, caption, list and paragraph is boosted by 1.1%, 0.1%, 1.7% and 2.2%, respectively. We rely on existing OCR engines <ref type="bibr" target="#b46">[47]</ref> to extract text, but they are not always reliable for scanned documents of low quality. To quantitatively analyze the effects of using extracted text, we compare the performance of using extracted text versus real text. The comparison is conducted on a subset of our synthetic dataset (200 images), since ground-truth text is naturally available. As shown in <ref type="table">Table 2</ref>, using real text leads to a remarkable improvement (6.4%) for mean IoU, suggesting the effectiveness of incorporating textual information. Using OCR extracted text is not as effective, but still results in 2.6% improvement. It is better than the 0.3% improvement on DSSE-200 dataset; we attribute this to our synthetic data not being as complicated as DSSE-200, so extracting text becomes easier.  <ref type="table">Table 2</ref>: IoU scores (%) on the DSSE-200 (D) and synthetic dataset (S) using text embedding map. On synthetic dataset, we further investigate the effects of using extracted text versus real text when building the text embedding map.</p><formula xml:id="formula_9">L cls L rec L cons L rec+con mean 73.3 73.9</formula><p>75.4 75.9 <ref type="table">Table 3</ref>: IoU scores (%) when using different training objectives on DSSE-200 dataset. cls: pixel-wise classification task, rec: reconstruction task and cons: consistency task.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Methods</head><p>non-text text Leptonica <ref type="bibr" target="#b7">[8]</ref> 84.7 86.8 Bukhari et al. <ref type="bibr" target="#b9">[10]</ref> 90 </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.3.">Unsupervised Learning Tasks</head><p>Here, we examine how the proposed two unsupervised learning tasks -reconstruction and consistency taskscan complement the pixel-wise classification during training. We take the best model in Sec. 6.2, and only change the training objectives. Our model is then fine-tuned in a semisupervised manner as described in Sec. 5. The results are shown in <ref type="table">Table 3</ref>. Adding the reconstruction task slightly improves the mean IoU by 0.6%, while adding the consistency task leads to a boost of 1.9%. These results justify our hypothesis that harnessing region information is beneficial. Combining both tasks results in a mean IoU of 75.9%. <ref type="table">Table 4</ref> and 5 present comparisons with several methods that have previously reported performance on the IC-DAR2015 and SectLabel datasets. It is worth emphasiz-ing that our MFCN model simultaneously predicts both appearance-based and semantics-based classes while other methods can not.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.4.">Comparisons with Prior Art</head><p>Comparisons on ICDAR2015 dataset <ref type="table">(Table 4)</ref>. Previous pixel-wise page segmentation models usually solve a binary segmentation problem and do not make predictions for fine-grained classes. For fair comparison, we change the number of output channels of the last layer to 3 (background, figure and text) and fine-tune this last layer. Our binary MFCN model achieves 94.5%, 91.0% and 77.1% IoU scores for non-text (background and figure), text and figure regions, outperforming other models.</p><p>Comparisons on SectLabel dataset <ref type="table">(Table 5</ref>). Luong et at. <ref type="bibr" target="#b34">[35]</ref> first use Omnipage <ref type="bibr" target="#b1">[2]</ref> to localize and recognize text lines, then predict the semantics-based label for each line. The F1 score for each class was reported. For fair comparison, we use the same set of text line bounding boxes, and use the averaged pixel-wise prediction as the label for each text line. Our model achieves better F1 scores for section heading (0.919 VS 0.916), caption (0.893 VS 0.781) and list (0.793 VS 0.712), while being capable of identifying figures and tables.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.">Conclusion</head><p>We proposed a multimodal fully convolutional network (MFCN) for document semantic structure extraction. The proposed model uses both visual and textual information. Moreover, we propose an efficient synthetic data generation method that yields per-pixel ground-truth. Our unsupervised auxiliary tasks help boost performance tapping into unlabeled real documents, facilitating better representation learning. We showed that both the multimodal approach and unsupervised tasks can help improve performance. Our results indicate that we have improved the state of the art on previously established benchmarks. In addition, we are publicly providing the large synthetic dataset (135,000 pages) as well as a new benchmark dataset: DSSE-200.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: (a) Examples that are difficult to identify if only based on text. The same name can be a title, an author or a figure caption. (b) Examples that are difficult to identify if only based on visual appearance. Text in the large font might be mislabeled as a section heading. Text with dashes might be mislabeled as a list.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Left: A dilated block that contains 5 dilated convolutional layers with different dilation d. Batch-Normalization and non-linearity are not shown for brevity. Right: The skip-gram model for word embeddings.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Example synthetic documents, raw segmentations and results after optional post-processing (Sec. 5). Segmentation label colors are: figure , table , section heading , caption , list and paragraph .</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head></head><label></label><figDesc>lary decoder), denoted as D rec , and define a reconstruction loss at intermediate features. This auxiliary decoder only exists during the training phase.Let a l , l = 1, 2, • • • L be the activations of the l th layer of the encoder, and a 0 be the input image. For a feed-forward convolutional network, a l is a feature map of size C l ×H l × W l . Our auxiliary decoder D rec attempts to reconstruct a hierarchy of feature maps {ã l }. Reconstruction loss L</figDesc><table><row><cell>(l) rec</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_1"><head>Table 1 :</head><label>1</label><figDesc>table, section heading , caption , list and paragraph . Ablation experiments on DSSE-200 dataset. The architecture of each model is characterized by the dilation in convolution layers, the way of upsampling and the use of skip connection. IoU scores (%) are reported. ters are similar. Comparing the results for these three models, we can see that the IoU of Model4 for each class is on par with or worse than Model3, while Model5 is better than both Model3 and Model4 for all classes.</figDesc><table><row><cell cols="4">Model# dilation upsampling skip</cell><cell cols="7">bkg figure table section caption list paragraph mean</cell></row><row><cell>1</cell><cell>1</cell><cell>bilinear</cell><cell>no</cell><cell>80.3 75.4</cell><cell>62.7</cell><cell>50.0</cell><cell>33.8</cell><cell>57.3</cell><cell>70.4</cell><cell>61.4</cell></row><row><cell>2</cell><cell>1</cell><cell>bilinear</cell><cell>yes</cell><cell>82.1 76.7</cell><cell>74.4</cell><cell>51.8</cell><cell>42.4</cell><cell>58.7</cell><cell>74.4</cell><cell>65.4</cell></row><row><cell>3</cell><cell>1</cell><cell>unpooling</cell><cell>yes</cell><cell>84.1 81.2</cell><cell>77.6</cell><cell>54.6</cell><cell>60.3</cell><cell>65.9</cell><cell>74.8</cell><cell>71.2</cell></row><row><cell>4</cell><cell>8</cell><cell>unpooling</cell><cell>yes</cell><cell>83.9 74.9</cell><cell>69.7</cell><cell>57.2</cell><cell>60.2</cell><cell>64.6</cell><cell>76.1</cell><cell>69.5</cell></row><row><cell>5</cell><cell>block</cell><cell>unpooling</cell><cell>yes</cell><cell>84.6 83.3</cell><cell>79.4</cell><cell>58.3</cell><cell>61.0</cell><cell>66.7</cell><cell>77.1</cell><cell>73.0</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 4 :Table 5 :</head><label>45</label><figDesc>IoU scores (%) for page segmentation on the ICDAR2015 dataset. For comparison purpose, only IoU scores for non-text, text and figure are shown. However our model can make fine-grained predictions as well. F1 scores on the SectLabel dataset. Note that our model can also identify non-text classes such as figures and tables.</figDesc><table><row><cell></cell><cell></cell><cell>.6</cell><cell>90.3</cell></row><row><cell cols="2">Ours (binary)</cell><cell>94.5</cell><cell>91.0</cell></row><row><cell>Methods</cell><cell></cell><cell>figure</cell><cell>text</cell></row><row><cell cols="2">Fernandez et al. [17]</cell><cell>70.1</cell><cell>85.8</cell></row><row><cell cols="2">Ours (binary)</cell><cell>77.1</cell><cell>91.0</cell></row><row><cell>Methods</cell><cell cols="2">section caption</cell><cell>list</cell><cell>para.</cell></row><row><cell cols="2">Luong et al. [35] 0.916</cell><cell>0.781</cell><cell cols="2">0.712 0.969</cell></row><row><cell>Ours</cell><cell>0.919</cell><cell>0.893</cell><cell cols="2">0.793 0.969</cell></row></table></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1">http://personal.psu.edu/xuy111/projects/ cvpr2017_doc.html.</note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Acknowledgment</head><p>This work started during Xiao Yang's internship at Adobe Research. This work was supported by NSF grant CCF 1317560 and Adobe Systems Inc.</p></div>
+			</div>
+
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title/>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><surname>Abbyy</surname></persName>
+		</author>
+		<ptr target="https://www.abbyy.com/.2" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<monogr>
+		<title/>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><surname>Omnipage</surname></persName>
+		</author>
+		<ptr target="https://goo.gl/nDQEpC.2,8" />
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<monogr>
+		<title/>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><surname>Wikipedia</surname></persName>
+		</author>
+		<ptr target="https://dumps.wikimedia.org/" />
+		<imprint>
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="page">6</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Page segmentation and classification utilizing bottom-up approach</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Amin</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Shiu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">International Journal of Image and Graphics</title>
+		<imprint>
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="issue">02</biblScope>
+			<biblScope unit="page" from="345" to="361" />
+			<date type="published" when="2001" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Vqa: Visual question answering</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Antol</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Mitchell</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><forename type="middle">Lawrence</forename><surname>Zitnick</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Parikh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE International Conference on Computer Vision</title>
+		<meeting>the IEEE International Conference on Computer Vision</meeting>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="2425" to="2433" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">A realistic dataset for performance evaluation of document layout analysis</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Antonacopoulos</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Bridson</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><surname>Papadopoulos</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Pletschacher</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">10th International Conference on Document Analysis and Recognition</title>
+		<imprint>
+			<date type="published" when="2009" />
+			<biblScope unit="volume">5</biblScope>
+			<biblScope unit="page">6</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Icdar2015 competition on recognition of documents with complex layouts-rdcl2015</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Antonacopoulos</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><surname>Clausner</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><surname>Papadopoulos</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Pletschacher</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Document Analysis and Recognition (ICDAR), 2015 13th International Conference on</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="1151" to="1155" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Document image applications</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><forename type="middle">S</forename><surname>Bloomberg</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L</forename><surname>Vincent</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Morphologie Mathmatique</title>
+		<imprint>
+			<biblScope unit="issue">8</biblScope>
+			<date type="published" when="2007" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Bojanowski</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">E</forename><surname>Grave</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Mikolov</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1607.04606</idno>
+		<title level="m">Enriching word vectors with subword information</title>
+		<imprint>
+			<date type="published" when="2016" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Improved document image segmentation algorithm using multiresolution morphology</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><forename type="middle">S</forename><surname>Bukhari</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">F</forename><surname>Shafait</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><forename type="middle">M</forename><surname>Breuel</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IS&amp;T/SPIE Electronic Imaging, pages 78740D-78740D. International Society for Optics and Photonics</title>
+		<imprint>
+			<date type="published" when="2011" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<monogr>
+		<title level="m" type="main">Synthesized classifiers for zero-shot learning</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Changpinyo</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">W.-L</forename><surname>Chao</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">B</forename><surname>Gong</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">F</forename><surname>Sha</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1603.00550</idno>
+		<imprint>
+			<date type="published" when="2016" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Page segmentation of historical document images with convolutional autoencoders</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Seuret</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Liwicki</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Hennebert</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Ingold</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Document Analysis and Recognition (ICDAR), 2015 13th International Conference on</title>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="1011" to="1015" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">Semantic image segmentation with deep convolutional nets and fully connected crfs</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L.-C</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G</forename><surname>Papandreou</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">I</forename><surname>Kokkinos</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>Murphy</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><forename type="middle">L</forename><surname>Yuille</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1412.7062</idno>
+		<imprint>
+			<date type="published" when="2014" />
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="page">7</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Page grammars and page parsing. a syntactic approach to document layout recognition</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Conway</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Second International Conference on</title>
+		<meeting>the Second International Conference on</meeting>
+		<imprint>
+			<date type="published" when="1993" />
+			<biblScope unit="page" from="761" to="764" />
+		</imprint>
+	</monogr>
+	<note>Document Analysis and Recognition</note>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Support-vector networks</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><surname>Cortes</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">V</forename><surname>Vapnik</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Machine learning</title>
+		<imprint>
+			<biblScope unit="volume">20</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="273" to="297" />
+			<date type="published" when="1995" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Long-term recurrent convolutional networks for visual recognition and description</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Donahue</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L</forename><surname>Hendricks</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Guadarrama</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Rohrbach</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Venugopalan</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>Saenko</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Darrell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="2625" to="2634" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Document segmentation using relative location features</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">F</forename><forename type="middle">C</forename><surname>Fernández</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">O</forename><forename type="middle">R</forename><surname>Terrades</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Pattern Recognition (ICPR), 2012 21st International Conference on</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2012" />
+			<biblScope unit="page" from="1562" to="1565" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Logical structure descriptions of segmented document images</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><forename type="middle">L</forename><surname>Fisher</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of International Con ference on Document Analysis and Recognition</title>
+		<meeting>International Con ference on Document Analysis and Recognition</meeting>
+		<imprint>
+			<date type="published" when="1991" />
+			<biblScope unit="page" from="302" to="310" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Devise: A deep visual-semantic embedding model</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Frome</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G</forename><forename type="middle">S</forename><surname>Corrado</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Shlens</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Bengio</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Dean</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Mikolov</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2013" />
+			<biblScope unit="page" from="2121" to="2129" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Are you talking to a machine? dataset and methods for multilingual image question</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">H</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Z</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">W</forename><surname>Xu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="2296" to="2304" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Document page decomposition by the bounding-box project</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Ha</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><forename type="middle">M</forename><surname>Haralick</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">I</forename><forename type="middle">T</forename><surname>Phillips</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Third International Conference on</title>
+		<meeting>the Third International Conference on</meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="1995" />
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="1119" to="1122" />
+		</imprint>
+	</monogr>
+	<note>Document Analysis and Recognition</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Recursive xy cut using bounding boxes of connected components</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Ha</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><forename type="middle">M</forename><surname>Haralick</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">I</forename><forename type="middle">T</forename><surname>Phillips</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Third International Conference on</title>
+		<meeting>the Third International Conference on</meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="1995" />
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page" from="952" to="955" />
+		</imprint>
+	</monogr>
+	<note>Document Analysis and Recognition</note>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<monogr>
+		<title level="m" type="main">Deep residual learning for image recognition</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">X</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Ren</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Sun</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1512.03385</idno>
+		<imprint>
+			<date type="published" when="2015" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">A top-down document analysis method for logical structure recognition</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Ingold</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of International Conference on Document Analysis and Recognition</title>
+		<meeting>International Conference on Document Analysis and Recognition</meeting>
+		<imprint>
+			<date type="published" when="1991" />
+			<biblScope unit="page" from="41" to="49" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<title level="m" type="main">Batch normalization: Accelerating deep network training by reducing internal covariate shift</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Ioffe</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><surname>Szegedy</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1502.03167</idno>
+		<imprint>
+			<date type="published" when="2015" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Deep unordered composition rivals syntactic methods for text classification</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Iyyer</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">V</forename><surname>Manjunatha</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Boyd-Graber</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">H</forename><surname>Daumé</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Association for Computational Linguistics</title>
+		<meeting>the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2015" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<title level="m" type="main">Bag of tricks for efficient text classification</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Joulin</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">E</forename><surname>Grave</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Bojanowski</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Mikolov</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1607.01759</idno>
+		<imprint>
+			<date type="published" when="2016" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Deep visual-semantic alignments for generating image descriptions</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Karpathy</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L</forename><surname>Fei-Fei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="3128" to="3137" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Syntactic segmentation and labeling of digitized pages from technical journals</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Krishnamoorthy</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G</forename><surname>Nagy</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Seth</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Viswanathan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Pattern Analysis and Machine Intelligence</title>
+		<imprint>
+			<biblScope unit="volume">15</biblScope>
+			<biblScope unit="issue">7</biblScope>
+			<biblScope unit="page" from="737" to="747" />
+			<date type="published" when="1993" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">A fast and efficient method for extracting text paragraphs and graphics from unconstrained documents</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">F</forename><surname>Lebourgeois</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Z</forename><surname>Bublinski</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">H</forename><surname>Emptoz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Pattern Recognition, 1992. Vol. II. Conference B: Pattern Recognition Methodology and Systems, Proceedings., 11th IAPR International Conference on</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="1992" />
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="272" to="276" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">Uwisl document image analysis toolbox: An experimental environment</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Rogers</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><forename type="middle">M</forename><surname>Haralick</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">I</forename><forename type="middle">T</forename><surname>Phillips</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Fourth International Conference on</title>
+		<meeting>the Fourth International Conference on</meeting>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="1997" />
+			<biblScope unit="page" from="984" to="988" />
+		</imprint>
+	</monogr>
+	<note>Document Analysis and Recognition</note>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Microsoft coco: Common objects in context</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T.-Y</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Maire</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Belongie</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Hays</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Perona</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Ramanan</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Dollár</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><forename type="middle">L</forename><surname>Zitnick</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">European Conference on Computer Vision</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2014" />
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="page">5</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Fully convolutional networks for semantic segmentation</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Long</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">E</forename><surname>Shelhamer</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Darrell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="3431" to="3440" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<title level="m" type="main">Learning from weak and noisy labels for semantic segmentation</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Z</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Z</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Xiang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">X</forename><surname>Gao</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2016" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title level="m" type="main">Logical structure recovery in scholarly articles with rich document features. Multimedia Storage and Retrieval Innovations for Digital Library Systems</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M.-T</forename><surname>Luong</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><forename type="middle">D</forename><surname>Nguyen</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M.-Y</forename><surname>Kan</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2008" />
+			<biblScope unit="volume">270</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<analytic>
+		<title level="a" type="main">Supervised dictionary learning</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Mairal</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Ponce</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G</forename><surname>Sapiro</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Zisserman</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">F</forename><forename type="middle">R</forename><surname>Bach</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2009" />
+			<biblScope unit="page" from="1033" to="1040" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Ask your neurons: A neural-based approach to answering questions about images</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Malinowski</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Rohrbach</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Fritz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE International Conference on Computer Vision</title>
+		<meeting>the IEEE International Conference on Computer Vision</meeting>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="1" to="9" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Document structure analysis algorithms: a literature survey</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Rosenfeld</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Kanungo</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Electronic Imaging 2003</title>
+		<imprint>
+			<date type="published" when="2003" />
+			<biblScope unit="page" from="197" to="207" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<monogr>
+		<title level="m" type="main">Efficient estimation of word representations in vector space</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Mikolov</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G</forename><surname>Corrado</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Dean</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1301.3781</idno>
+		<imprint>
+			<date type="published" when="2013" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">Distributed representations of words and phrases and their compositionality</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Mikolov</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">I</forename><surname>Sutskever</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G</forename><forename type="middle">S</forename><surname>Corrado</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Dean</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2013" />
+			<biblScope unit="page" from="3111" to="3119" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">Learning deconvolution network for semantic segmentation</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">H</forename><surname>Noh</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Hong</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">B</forename><surname>Han</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE International Conference on Computer Vision</title>
+		<meeting>the IEEE International Conference on Computer Vision</meeting>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="1520" to="1528" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<monogr>
+		<title level="m" type="main">Weakly-and semi-supervised learning of a dcnn for semantic image segmentation</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G</forename><surname>Papandreou</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L.-C</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>Murphy</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><forename type="middle">L</forename><surname>Yuille</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1502.02734</idno>
+		<imprint>
+			<date type="published" when="2015" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Learning to refine object segments</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><forename type="middle">O</forename><surname>Pinheiro</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T.-Y</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Collobert</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Dollár</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the European Conference on Computer Vision (ECCV)</title>
+		<meeting>the European Conference on Computer Vision (ECCV)</meeting>
+		<imprint>
+			<date type="published" when="2016" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<monogr>
+		<title level="m" type="main">Mediateam document database ii. A CD-ROM collection of document images, University of Oulu Finland</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Sauvola</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">H</forename><surname>Kauniskangas</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1999" />
+			<biblScope unit="volume">2</biblScope>
+			<biblScope unit="page">5</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<analytic>
+		<title level="a" type="main">Learning nongenerative grammatical models for document analysis</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Shilman</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Viola</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Tenth IEEE International Conference on Computer Vision (ICCV&apos;05</title>
+		<imprint>
+			<date type="published" when="2005" />
+			<biblScope unit="volume">1</biblScope>
+			<biblScope unit="page" from="962" to="969" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">A fast algorithm for bottom-up document layout analysis</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Simon</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J.-C</forename><surname>Pret</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><forename type="middle">P</forename><surname>Johnson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Pattern Analysis and Machine Intelligence</title>
+		<imprint>
+			<biblScope unit="volume">19</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<biblScope unit="page" from="273" to="277" />
+			<date type="published" when="1997" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<monogr>
+		<title level="m" type="main">An overview of the tesseract ocr engine</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Smith</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2007" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<analytic>
+		<title level="a" type="main">Zero-shot learning through cross-modal transfer</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Socher</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Ganjoo</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Ng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2013" />
+			<biblScope unit="page" from="935" to="943" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">Going deeper with convolutions</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><surname>Szegedy</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">W</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Y</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Sermanet</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Reed</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Anguelov</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Erhan</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">V</forename><surname>Vanhoucke</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Rabinovich</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="1" to="9" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<analytic>
+		<title level="a" type="main">The uva color document dataset</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L</forename><surname>Todoran</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Worring</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><forename type="middle">W</forename><surname>Smeulders</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">International Journal of Document Analysis and Recognition (IJDAR)</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page">5</biblScope>
+			<date type="published" when="2005" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">Extracting and composing robust features with denoising autoencoders</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Vincent</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">H</forename><surname>Larochelle</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Y</forename><surname>Bengio</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P.-A</forename><surname>Manzagol</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 25th international conference on Machine learning</title>
+		<meeting>the 25th international conference on Machine learning</meeting>
+		<imprint>
+			<publisher>ACM</publisher>
+			<date type="published" when="2008" />
+			<biblScope unit="page" from="1096" to="1103" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<analytic>
+		<title level="a" type="main">Dense prediction for text line segmentation in handwritten document images</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Q</forename><forename type="middle">N</forename><surname>Vo</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G</forename><surname>Lee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Image Processing (ICIP), 2016 IEEE International Conference on</title>
+		<imprint>
+			<date type="published" when="2016" />
+			<biblScope unit="page" from="3264" to="3268" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">A discriminative feature learning approach for deep face recognition</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Y</forename><surname>Wen</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Z</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Y</forename><surname>Qiao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">European Conference on Computer Vision</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2016" />
+			<biblScope unit="page" from="499" to="515" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<monogr>
+		<title level="m" type="main">Multi-scale context aggregation by dilated convolutions</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">F</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">V</forename><surname>Koltun</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1511.07122</idno>
+		<imprint>
+			<date type="published" when="2015" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<monogr>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><forename type="middle">D</forename><surname>Zeiler</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1212.5701</idno>
+		<title level="m">Adadelta: an adaptive learning rate method</title>
+		<imprint>
+			<date type="published" when="2012" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b55">
+	<analytic>
+		<title level="a" type="main">Weakly supervised semantic segmentation for social images</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">W</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">X</forename><surname>Xue</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="2718" to="2726" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b56">
+	<monogr>
+		<title level="m" type="main">Augmenting supervised neural networks with unsupervised objectives for large-scale image classification</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Y</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">E</forename><forename type="middle">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">E</forename><forename type="middle">H</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">U</forename><surname>Edu</surname></persName>
+		</author>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b57">
+	<monogr>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Mathieu</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Goroshin</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Y</forename><surname>Lecun</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1506.02351</idno>
+		<title level="m">Stacked what-where auto-encoders</title>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="page">4</biblScope>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>
