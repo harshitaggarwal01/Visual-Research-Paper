@@ -12,7 +12,7 @@
         ##### Input: PDF
         1. Extract text itself
         2. Identify headings and subheadings
-        ##### Output_1: The outline of the document using text w/ tabs
+        ##### Output_1: The outline of the document in two parts: 1. List of Headings 2. List of Dicts Holding Structured Plain Text
    2. Summarization of the lowest levels of content (for now: paragraph)
         ##### Input: Output_1
         1. Using outline, extract paragraph content under each heading
@@ -23,8 +23,12 @@
         4. Replace content in Output_1
         ##### Output_2: Outline with Summarized Paragraphs
    3. Feed Output_2 into application that will generate interactive mind map 
-        ##### Input: Output_2 (TXT w/ Tabs)
-        1. Identifying level of association: the number of tabs detected at the beginning of a line
-        2. Use Postorder Tree Traversal to create mind map's nodes
+        ##### Input: Output_2 
+        1. Generate the interactive mind map by creating a graph using PyVis
         ##### Output_3: Interactive Mind Map = Visual Research Paper
+        
+   ### To Do:
+   1. Extract figures and tables to add its labels to image nodes containing figure/table
+   2. Extract formulas to add as separate nodes
+   3. Generate a cleaner mind map 
 
