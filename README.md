@@ -1,7 +1,5 @@
 # IntraMIC
 ## Research Papers are Boring!
-
- ## Project Plan:
     
    ### Objective: 
 
