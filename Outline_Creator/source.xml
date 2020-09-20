@@ -1,0 +1,630 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TEI xml:space="preserve" xmlns="http://www.tei-c.org/ns/1.0" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.tei-c.org/ns/1.0 /home/lopez/grobid/grobid-home/schemas/xsd/Grobid.xsd"
+ xmlns:xlink="http://www.w3.org/1999/xlink">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Acquiring Common Sense Spatial Knowledge through Implicit Spatial Templates</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown"><licence/></availability>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author role="corresp">
+							<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Guillem</forename><surname>Collell</surname></persName>
+							<email>gcollell@kuleuven.be</email>
+							<affiliation key="aff0">
+								<orgName type="department">Department of Computer Science KU</orgName>
+								<address>
+									<settlement>Leuven</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Luc</forename><forename type="middle">Van</forename><surname>Gool</surname></persName>
+							<affiliation key="aff1">
+								<orgName type="laboratory">Computer Vision Laboratory ETH Zurich</orgName>
+							</affiliation>
+						</author>
+						<author>
+							<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Marie-Francine</forename><surname>Moens</surname></persName>
+							<affiliation key="aff2">
+								<orgName type="department">Department of Computer Science KU</orgName>
+								<address>
+									<settlement>Leuven</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">Acquiring Common Sense Spatial Knowledge through Implicit Spatial Templates</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date/>
+						</imprint>
+					</monogr>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.6.2-SNAPSHOT" ident="GROBID" when="2020-09-20T07:24+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Spatial understanding is a fundamental problem with widereaching real-world applications. The representation of spatial knowledge is often modeled with spatial templates, i.e., regions of acceptability of two objects under an explicit spatial relationship (e.g., "on", "below", etc.). In contrast with prior work that restricts spatial templates to explicit spatial prepositions (e.g., "glass on table"), here we extend this concept to implicit spatial language, i.e., those relationships (generally actions) for which the spatial arrangement of the objects is only implicitly implied (e.g., "man riding horse"). In contrast with explicit relationships, predicting spatial arrangements from implicit spatial language requires significant common sense spatial understanding. Here, we introduce the task of predicting spatial templates for two objects under a relationship, which can be seen as a spatial question-answering task with a (2D) continuous output ("where is the man w.r.t. a horse when the man is walking the horse?"). We present two simple neural-based models that leverage annotated images and structured text to learn this task. The good performance of these models reveals that spatial locations are to a large extent predictable from implicit spatial language. Crucially, the models attain similar performance in a challenging generalized setting, where the object-relation-object combinations (e.g.,"man walking dog") have never been seen before. Next, we go one step further by presenting the models with unseen objects (e.g., "dog"). In this scenario, we show that leveraging word embeddings enables the models to output accurate spatial predictions, proving that the models acquire solid common sense spatial knowledge allowing for such generalization.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>To provide machines with common sense is one of the major long term goals of artificial intelligence. Common sense knowledge regards knowledge that humans have acquired through a lifetime of experiences. It is crucial in language understanding because a lot of content needed for correct understanding is not expressed explicitly but resides in the mind of communicator and audience. In addition, humans rely on their common sense knowledge when performing a variety of tasks including interpreting images, navigation and reasoning, to name a few. Representing and understanding spatial knowledge are in fact imperative for any agent (human, animal or robot) that navigates in a physical world. In this paper, we are interested in acquiring spatial commonsense knowledge from language paired with visual data.</p><p>Computational and cognitive models often handle spatial representations as spatial templates or regions of acceptability for two objects under an explicit (a.k.a. deictic) spatial preposition such as "on", "below" or "left" <ref type="bibr" target="#b12">(Logan and Sadler 1996)</ref>. Contrary to previous work that conceives spatial templates only for explicit spatial language <ref type="bibr" target="#b14">(Malinowski and Fritz 2014;</ref><ref type="bibr" target="#b15">Moratz and Tenbrink 2006;</ref><ref type="bibr" target="#b12">Logan and Sadler 1996)</ref>, we extend such concept to implicit (a.k.a. intrinsic) spatial language, i.e., relationshipsgenerally actions-that do not explicitly define the relative spatial configuration between the two objects (e.g., "glass on table") but only implicitly (e.g., "woman riding horse"). In other words, implicit spatial templates capture the common sense spatial knowledge that humans possess and is not explicit in the language utterances.</p><p>Predicting spatial templates for implicit relationships is notably more challenging than for explicit relationships. Firstly, whereas there are only a few tens of explicit spatial prepositions, there exist thousands of actions, entailing thus a drastic increase in the sparsity of (object 1 , relationship, object 2 ) combinations. Secondly, the complexity of the task radically increases in implicit language. More precisely, while explicit spatial prepositions 1 are highly deterministic about the spatial arrangements (e.g., (object 1 , below, object 2 ) unequivocally implies that object 1 is relatively lower than object 2 ), actions generally are not. E.g., the relative spatial configuration of "man" and the object is clearly distinct in (man, pulling, kite) than in (man, pulling, luggage) yet the action is the same. Contrarily, other relationships such as "jumping" are highly informative about the spatial template, i.e., in (object 1 , jumping, object 2 ), object 2 is in a lower position than object 1 . Hence, unlike explicit relationships, predicting spatial layouts from implicit spatial language requires spatial common sense knowledge about the objects, actions and their interaction, which suggests the need of learning to compose the triplet (Subject, Relationship, Object) as a whole instead of learning a template for each Relationship.</p><p>To systematically study these questions, we propose the task of predicting the relative spatial locations of two objects given a structured text input (Subject, Relationship, Object). We introduce two simple neural-based models trained from annotated images that successfully address the two challenges of implicit spatial language discussed above. Our quantitative evaluation reveals that spatial templates can be reliably predicted from implicit spatial language-as accurately as from explicit spatial language. We also show that our models generalize well to templates of unseen combinations, e.g., predicting (man, riding, elephant) without having been exposed to such scene before, tackling thus the challenge of sparsity. Furthermore, by leveraging word embeddings, the models can correctly generalize to spatial templates with unseen words, e.g., predicting (man, riding, elephant) without having ever seen an "elephant" before. Since word embeddings capture attributes of objects <ref type="bibr" target="#b2">(Collell and Moens 2016)</ref>, one can reasonably expect that embeddings are informative about the spatial behavior of objects, i.e., their likelihood of exhibiting certain spatial patterns with respect to other objects. For instance, without having ever seen "boots" before but only "sandals", the model correctly predicts the template of (person, wearing, boots) by inferring that, since "boots" are similar to "sandals", they must be worn at the same location of the "person"'s body. Hence, the model leverages the acquired common sense spatial knowledge to generalize to unseen objects. Furthermore, we provide both, a qualitative 2D visualization of the predictions, and an analysis of the learned weights of the network which provide insight into the spatial connotations of words, revealing fundamental differences between implicit and explicit spatial language.</p><p>The rest of the paper is organized as follows. In Sect. 2 we review related research. In Sect. 3 we first introduce the task of predicting spatial templates and then present two simple neural models. Then, in Sect. 4, we describe our experimental setup. In Sect. 5 we present and discuss our results. Finally, in Sect. 6 we summarize the contributions of this article.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related work</head><p>Spatial processing has drawn significant attention from the cognitive <ref type="bibr" target="#b12">(Logan and Sadler 1996)</ref> and artificial intelligence communities <ref type="bibr" target="#b10">(Kruijff et al. 2007)</ref>. More specifically, spatial understanding is essential in tasks involving text-to-scene conversion such as robots' understanding of natural language commands <ref type="bibr" target="#b6">(Guadarrama et al. 2013;</ref><ref type="bibr" target="#b15">Moratz and Tenbrink 2006)</ref> or robot navigation.</p><p>Spatial templates. Earlier approaches have predominantly considered rule-based spatial representations <ref type="bibr" target="#b10">(Kruijff et al. 2007;</ref><ref type="bibr" target="#b15">Moratz and Tenbrink 2006)</ref>. In contrast, <ref type="bibr" target="#b14">Malinowski and Fritz (2014)</ref> propose a learning-based pooling approach to retrieve images given queries of the form (object 1 , spatial preposition, object 2 ). They learn the parameters of a spatial template for each explicit spatial preposition (e.g., "left" or "above") which computes a soft spatial fit of two objects under the relationship. E.g., an object to the left of the referent object obtains a high score for the "left" template and low for the "right" template. Contrary to them, we consider implicit spatial language instead of explicit.</p><p>Additionally, while they build a spatial template for each (explicit) Relationship, we build a template for each (Subject, Relationship, Object) combination, allowing the template to be determined by the interaction/composition of the Subject, Relationship and Object instead of the Relationship alone. Additionally, the model from <ref type="bibr" target="#b14">Malinowski and Fritz (2014)</ref> does not output spatial arrangements of objects, nor can it perform predictions with generalized (unseen) relationships.</p><p>Leveraging spatial knowledge in tasks. It has been shown that knowledge of the spatial structure in images improves the task of image captioning <ref type="bibr" target="#b3">(Elliott and Keller 2013)</ref>. These authors manually annotate images with geometric relationships between objects and show that a rule-based caption generation system benefits from this knowledge. In contrast to this work, our interest lies in predicting spatial arrangements of objects from text instead of generating text given images. Furthermore, while they employ a small domain of only 10 actions, our goal is to learn from frequent spatial configurations and generalize these to unseen and rare objects/actions (and their combinations). Spatial knowledge has also improved object recognition <ref type="bibr" target="#b17">(Shiang et al. 2017)</ref>. These authors mine texts and labeled images to obtain spatial knowledge in the form of object co-occurrences and their relative positions. This knowledge is represented in a graph and a random walk algorithm over this graph results in a ranking of possible object labellings. Contrarily, our representations of spatial knowledge are neural network based, are not primarily used for object recognition, and we furthermore predict spatial templates.</p><p>Common sense spatial knowledge. <ref type="bibr" target="#b20">Yatskar, Ordonez, and Farhadi (2016)</ref> propose a model to extract common sense facts from annotated images and their textual descriptions using co-occurrence statistics among which is point-wise mutual information (PMI). These facts include six spatial relationships ("on", "under", "touches", "above", "besides", "holds", "on", and "disconnected"). The result is a symbolic (discretized) representation of common sense knowledge in the form of relations between objects that logically entail other relational facts. Our method also extracts common sense knowledge from images and text, but predicts (continuous) spatial templates. <ref type="bibr" target="#b11">Lin and Parikh (2015)</ref> leverage common sense visual knowledge (e.g., object locations and co-occurrences) in the tasks of fill-in-the-blank and visual paraphrasing. They compute the likelihood of a scene to identify the most likely answer to multiple-choice textual scene descriptions. In contrast, we focus solely on spatial information-and in assuring the correctness of our spatial predictions-rather than on scene understanding.</p><p>Image generation. Although models that generate images from text exist (e.g., DRAW model <ref type="bibr" target="#b5">(Gregor et al. 2015)</ref>), their focus is quite distant from producing "spatially sensible" images and they are generally meant to generate a single object rather than placing it relative to other objects.</p><p>As discussed, spatial knowledge can improve a wide range of tasks <ref type="bibr" target="#b17">(Shiang et al. 2017</ref> </p><formula xml:id="formula_0">(S b x , S b y)</formula><p>Obj.</p><p>Subj.</p><p>x y Elliott and Keller 2013). This suggests that the predictions of our models can be used as spatial common sense input for methods that rely on good spatial priors. Additionally, existing methods require the spatial information to be present in the data and lack the capacity to extrapolate/generalize. Thus, in this paper we focus, first, on showing that generalizing spatial arrangements to unseen objects and object-relation-object combinations is possible and, second, on ensuring that the predicted templates are accurate by performing several quantitative and qualitative evaluations.</p><formula xml:id="formula_1">S b y S b x Obj. Subj. (S c x , S c y) REG model PIX model Obj. (O c x , O c y) O b x O b y Obj. O b y O b x 1 1 1 0 0 0 0 Subj.</formula><p>3 Proposed task and model</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.1">Proposed task</head><p>To learn spatial templates, we propose the task of predicting the 2D relative spatial arrangement of two objects under a relationship given a structured text input of the form (Subject, Relationship, Object)-henceforth abbreviated as (S, R, O). Let us denote the 2D coordinates of the center ("c") of the Object's box as</p><formula xml:id="formula_2">O c = [O c x , O c y ] ∈ R 2 , where O c x ∈ R and O c</formula><p>y ∈ R are the horizontal and vertical components respectively. Let</p><formula xml:id="formula_3">O b = [O b</formula><p>x , O b y ] ∈ R 2 be half of the width (O b x ) and half of the height (O b y ) of the Object's box ("b"). We employ a similar notation for the Subject (S c , S b ), and model predictions are denoted with a hat O c , O b . The task consists in predicting the Object's location and size</p><formula xml:id="formula_4">[O c ,O b ] ∈ R 4 (output)</formula><p>given the structured text input (S, R, O) and the location S c and size S b of the Subject <ref type="figure" target="#fig_0">(Fig. 1)</ref>. 2 This defines a supervised task where the size and location of bounding boxes in images serve as ground truth. Our task can be interpreted as a spatial question-answering with structured questions (triplets) that allows evaluating the answer quantitatively in a 2D space.</p><p>2 Crucially, we notice that knowing the Subject's coordinates is not a requirement for generating templates (but only for evaluating against the ground truth) since inputting arbitrary coordinates (e.g., S c =[0.5, 0.5]) still enables visualizing relative object locations. Additionally, we input the Subject's size in order to provide a reference size to the model. However, we find that without this input, the model still learns to predict an "average size" for each Object.</p><p>Hence, the goal is to answer common sense spatial questions such as "if a man is feeding a horse, where is the man relative to the horse?" or "where would a child wear her shoes?"</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.2">Proposed models</head><p>To build a mapping from the input to the output in our task (Sect. 3.1) we propose two simple neural models ( <ref type="figure" target="#fig_0">Fig. 1)</ref>. Their architecture is identical in the input and representation layers, yet they differ in the output and loss function. </p><formula xml:id="formula_5">d-dimensional vectors w S W S , w R W R , w O W O , where w S ∈ R |V S | , w R ∈ R |V R | , w O ∈ R |V O |</formula><p>are one-hot encodings of S, R, O (a.k.a. one-of-k encoding, i.e., a sparse vector with 0 everywhere except for a 1 at the position of the k-th word) and</p><formula xml:id="formula_6">W S ∈ R d×|V S | , W R ∈ R d×|V R | , W O ∈ R d×|V O | their embedding matrices with |V S |, |V R |, |V O | their vocab- ulary sizes.</formula><p>This layer represents objects and relationships as continuous features, enabling thus to introduce external knowledge of unseen objects as features. The embeddings are then concatenated with the Subject center S c and size</p><formula xml:id="formula_7">S b in a vector [w S W S , w R W R , w O W O , S c , S b ]</formula><p>which is inputted to a stack of hidden layers that compose S, R and O into a joint hidden representation z h :</p><formula xml:id="formula_8">z h = f (W h [w S W S , w R W R , w O W O , S c , S b ] + b h )</formula><p>where f (•) is an element-wise non-linear function and W h and b h are the weight matrix and bias respectively. 3 (ii) Output and loss. We consider two different possibilities for the outputŷ that follows immediately after the last layer: <ref type="figure" target="#fig_0">(Fig. 1, top</ref>  • Model 2 (PIX). The outputŷ = σ(z out ) = (ŷ i,j ) ∈ R M ×M , where M is the number of pixels per side and σ() an element-wise sigmoid, is now a 2D heatmap of pixel activationsŷ i,j ∈ [0, 1] indicating the probability that a pixel belongs to the Object (class 1). Predictionsŷ are evaluated against the true y = (y i,j ) ∈ R M ×M with a binary cross-entropy loss:</p><formula xml:id="formula_9">z out = W out z h + b out</formula><formula xml:id="formula_10">L(y,ŷ) = − M i=1 M j=1 y i,jŷi,j − (1 − y i,j ) log(1 −ŷ i,j ), where y i,j ∈ {0, 1}.</formula><p>These models are conceptually different and have different capabilities. While the REG model outputs "crisp" pointwise predictions, PIX can model more diffuse spatial templates where the location of the object has more variability, e.g., in (man, flying, kite) the "kite" can easily move around. Notice that in contrast with convolutional neural networks (CNNs) our approach does not make use of the image pixels ( <ref type="figure" target="#fig_0">Fig. 1</ref>), yielding a model fully specialized in spatial knowledge.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4">Experimental setup</head><p>We employ a 10-fold cross-validation (CV) setting. Data are randomly split into 10 disjoint parts and 10% is employed for testing and 90% for training, repeating this for each of the 10 folds. Reported results are averages over the 10 folds.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Visual Genome data set</head><p>We use the Visual Genome dataset <ref type="bibr" target="#b9">(Krishna et al. 2017)</ref> as our source of annotated images. The Visual Genome consists of ∼108K images containing ∼1.5M human-annotated (Subject, Relationship, Object) instances with bounding boxes for Subject and Object <ref type="figure" target="#fig_3">(Fig. 2)</ref>. We filter out all the instances containing explicit spatial prepositions, preserving only instances with implicit spatial relationships. We keep only combinations for which we have word embeddings available for the whole triplet (S, R, O). After this filtering, ∼378K instances are preserved, yielding 2,183 unique implicit Relationships and 5,614 unique objects (i.e., Subjects and Objects). The left out instances of explicit language yield ∼852K instances, 36 unique explicit spatial prepositions and 6,749 unique objects.</p><p>dog, catches, frisbee boy, feeds, giraffe man, throws, frisbee cat, wears glasses </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Evaluation sets</head><p>We consider the following subsets of the Visual Genome data to evaluate performance. (i) Raw data: Simply the unfiltered instances from the Visual Genome data (Sect. 4.1). This set contains a substantial proportion of meaningless (e.g., (nose, almost, touching)) and irrelevant (e.g., (sign, says, gate 2)) instances. (ii) Generalized Triplets: We pick at random 100 combinations (S, R, O) among the 1,000 most frequent implicit combinations in Visual Genome. This yields ∼25K instances such as (person, holding, racket), (man, flying, kite), etc. 4 (iii) Generalized Words: We randomly choose 25 objects (e.g., "woman", "apple", etc.) 5 among the 100 most frequent objects in Visual Genome and take all the instances (∼130K) that contain any of these words. For example, since "apple" is in our list, e.g., (cat, sniffing, apple) is kept. <ref type="bibr">6</ref> Notice that a combination (S, R, O) with a generalized word is automatically a generalized triplet too.</p><p>When enforcing generalization conditions in our experiments, all combinations from sets (ii) and (iii) are removed from the training data to prevent the model from seeing them. 7 Even without imposing generalization conditions (or when testing with Raw data), reported results are always on unseen instances-yet the combinations (S, R, O) may have been seen during training (e.g., in different images). All sets above contain exclusively implicit spatial language, although an analogous version of the Raw set where R are explicit spatial prepositions is also considered in our experiments.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Data pre-processing</head><p>The coordinates of bounding boxes in the images are normalized by the width and height of the image. Thus, S c , O c ∈ [0, 1] 2 . Additionally, we notice that the distinction between left and right is arbitrary regarding the semantics of the image <ref type="bibr" target="#b18">(Singhal, Luo, and Zhu 2003)</ref>. That is, a mirrored image preserves entirely its meaning-while a vertically inverted image does not. For example, a "child" "walking" a "horse" can meaningfully be at either side of the "horse", while a "child" "riding" a "horse" cannot be either above or below the "horse". Hence, to free the model from such arbitrariness, we mirror the image when (and only when) the Object is at the left hand side of the Subject. This leaves the Object always to the right-hand side of the Subject. Notice that mirroring is aimed at properly measuring performance and does not impose any big constraint (one can simply consider the symmetric reflection of the predictions as equally likely).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Evaluation metrics</head><p>The REG model directly outputs Object coordinates, while PIX outputs 2D heatmaps. We however enable evaluating the PIX model with regression/classification metrics by taking the point of maximum activation (or their average, if there are many) as the Object center O c . The predicted Object size O b is not estimated. We use the following performance metrics.</p><p>(A) Intersection over Union <ref type="bibr">(IoU)</ref>. We compute the bounding box overlap (IoU) from the PASCAL VOC object detection task <ref type="bibr" target="#b4">(Everingham et al. 2015</ref></p><formula xml:id="formula_11">): IoU = area( B O ∩B O ) area( B O ∪B O )</formula><p>where B O and B O are the predicted and ground truth Object bounding boxes, respectively. If the IoU is larger than 50%, the prediction is counted as correct. It must be noted that our setting is not comparable to object detection (nor our results) since we do not employ the image as input (but text) and thus we cannot leverage the pixels to predict the Object's location.</p><p>(B) Regression. We consider standard regression metrics. <ref type="bibr">7</ref> To avoid confusion with the term 'zero-shot' in classification, we denote our unseen words/triplets as generalized. Although both settings have resemblances, they differ in that, in ours, the unseen categories are inputs while in classification are targets. Notice that in both settings one must necessarily have semantic knowledge about the "zero-shot" class at hand <ref type="bibr" target="#b19">(Socher et al. 2013</ref>) (e.g., in the form of word embeddings), otherwise the task is clearly infeasible. (C) Above/below classification. With the semantic distinction between vertical and horizontal axes in mind (Sect. 4.3), we consider the problem of classifying above/below relative locations. If the model predicts that the Object center is above/below the Subject center and this actually occurs in the image we count it as correct. That is, sign( O c y − S c y ) and sign(O c y − S c y ) must match. We report macro-averaged F1 (F1 y ) and macro-averaged accuracy (acc y ).</p><p>(D) Pixel (macro) accuracy. The IoU on pixels is equivalent to binary pixel accuracy. However, this is not a good measure here, where class 1 (Object box) comprises, on average, only 5% of the pixels. Thus, a constant prediction of zeros everywhere would obtain 95% accuracy. Hence, we consider macro-averaged pixel accuracy, a.k.a. mean IoU (mIoU) <ref type="bibr" target="#b13">(Long, Shelhamer, and Darrell 2015)</ref> and report the best mIoU across the full range of decision thresholds.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.5">Word embeddings</head><p>We use 300-dimensional GloVe word embeddings (Pennington, Socher, and Manning 2014) pre-trained on the Common Crawl corpus (consisting of 840B-tokens), which we obtain from the authors' website. 8</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.6">Model hyperparameters and implementation</head><p>Our experiments are implemented in Python 2.7 and we use Keras deep learning framework for our models <ref type="bibr">(Chollet and others 2015)</ref>. Model hyperparameters are first selected in a 10fold cross-validation setting and we report (averaged) results on 10 new splits. Models are trained for 10 epochs on batches of size 64 with the RMSprop optimizer using a learning rate of 0.0001 and 2 hidden layers with 100 ReLu units. We find that the models are not very sensitive to parameter variations. The parameters of the embeddings are not backpropagated, although we find that this choice has little effect on the results. We employ a 15 × 15 pixel grid as output of the PIX model.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Results and discussion</head><p>We consider the evaluation sets from Sect. 4.2 and the following variations of PIX and REG models (Sect. 3.2). The subindex EMB denotes a model that employs GloVe embeddings and RND a model with embeddings randomly drawn from a dimension-wise normal distribution of mean (μ) and standard deviation (σ) equal to those of the GloVe embeddings, preserving the original dimensionality (d=300). A third type employs one-hot vectors (1H). We additionally  consider a control method (ctrl) that outputs random normal predictions of μ and σ equal to the dimension-wise mean and standard deviation of the training targets. We test statistical significance with a Friedman rank test and post hoc Nemenyi tests on the results of the 10 folds. We indicate with an asterisk * in the tables when a method is significantly better than the rest (p &lt; 0.01) within the same model (PIX or REG). <ref type="table" target="#tab_2">Table 1</ref> shows that all methods perform well considering the amount of noise present in the Raw data. Especially noteworthy is the finding that relative locations can be predicted from implicit spatial language approximately as accurately as from explicit spatial language. Interestingly, unlike the other metrics, the IoU (which only counts a prediction as correct if the overlap between true and predicted boxes is larger than 50%) is clearly higher in explicit than in implicit language, which suggests that implicit templates exhibit more flexibility on the Object's location. Hence, "blurrier" predictions such as those of PIX can be a good choice in some applications, e.g., computing the soft fit between images and templates to perform (spatially informed) image retrieval. We also observe that models with 1H embeddings tend to perform better, yet differences are generally only significant against RND. <ref type="table" target="#tab_4">Table 2</ref> shows that all models perform well on generalized triplets (top left), remarkably closely to their performance without imposing generalization conditions (right). Again, 1H performs slightly better, yet only significantly better than RND (p &lt; 0.005). Notably, the good performance of RND on generalized triplets evidences that the model does not rely on external knowledge (word embeddings) to predict unseen combinations. This ability of generalizing from frequent combinations (S, R, O) to rare/unseen ones is especially valuable given the sparsity of implicit combinations and the impossibility of learning all of them from data. Contrarily, larger performance differences are observed with generalized words <ref type="figure" target="#fig_3">(Tab. 2, bottom left)</ref> where, as expected, EMB outperforms RND and 1H embeddings by a  </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">Evaluation with raw data</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Generalized evaluations</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3">Qualitative evaluation (spatial templates)</head><p>To ensure that model predictions are meaningful and interpretable, we further validate the quantitative results above with a qualitative evaluation. Notice that all plots in <ref type="figure" target="#fig_4">Fig. 3</ref> are generalized (either unseen words or triplets). Both, PIX and REG are able to infer the size and location of the Object notably well in unseen triplets <ref type="figure" target="#fig_4">(Fig. 3, bottom)</ref>, regardless of the embedding type (EMB or RND). However, in unseen words <ref type="figure" target="#fig_4">(Fig. 3, top)</ref>, the models that leverage word embeddings (EMB) tend to perform better, aligning with the quantitative results above. Remarkably, both PIX EMB and REG EMB output very accurate predictions in generalized words (top), e.g., predicting correctly the size (and location) of an "elephant" relative to a "kid" even though the model has never seen an "elephant" before. Noticeably, the models learn to compose the triplets, distinguishing, for instance, between "carrying a surfboard" and "riding a surfboard" or between "playing frisbee" and "holding a frisbee", etc. The mapping of language to a 2D visualization provides another interesting property. Traditional language processing systems translate spatial information to qualitative symbolic representations that capture spatial knowledge with a limited symbolic vocabulary and that are used in qualitative spatial reasoning <ref type="bibr" target="#b1">(Cohn and Renz 2008)</ref>. Research shows that translation of language to qualitative spatial symbolic representations is difficult <ref type="bibr" target="#b7">(Kordjamshidi and Moens 2015)</ref>, obtaining rather low F1 measures on recognition performance, even if the language utterance is accompanied by visual data <ref type="bibr" target="#b8">(Kordjamshidi et al. 2017)</ref>. Here, we have shown that we can translate language utterances into visualizations in a quantitative 2D space, complementing thus existing symbolic models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.4">Interpretation of model weights</head><p>We study how the weights of the model provide insight into the spatial properties of words. To obtain more interpretable weights, we learn a REG 9 model without hidden layers, resulting in only an embedding layer followed by a linear output layerŷ = W out u + b out , where</p><formula xml:id="formula_12">u := [w S , w R , w O , S c , S b ].</formula><p>By using one-hot encodings w S , w R , w O , the concatenation layer u becomes of size |V S | + |V R | + |V O | + 2 + 2. E.g., if "wearing" has one-hot index j in the Relationships' vocabulary (V R ), its index in the concatenation layer is |V S | + j. The product W out u is a 4-dimensional vector, where its i-th component is the product of the i-th row of W out with the vector u. Thus, the component |V S |+j of the i-th row of W out gives us the influence of the j-th relationship (i.e., "wearing") on the i-th dimension of the outputŷ =   <ref type="table" target="#tab_6">Table 3</ref> shows the weights influencing the y-coordinate O c y . We notice that objects such as "kite" or "headband" which tend to be above the Subject have a large negative weight, while objects that tend to be below, e.g., "sandals" or "hoof", have a large positive weight, i.e., a large positive influence on the Object's y-coordinate. While implicit relations such as "kicking" or "riding" are strong predictors of the Object's   y-coordinate, "finding" or "pulled" are weak, suggesting that the spatial template rather depends on their composition with the Subject and Object. In fact, the weights of implicit relations such as "flying" or "riding" are comparable to those of explicit relations such as "above" or "atop", behaving similarly to explicit language. Notice that even the less informative explicit relations have weights of at least one order of magnitude larger that the least informative implicit relations. <ref type="figure" target="#fig_4">Figure 4</ref> further evidences that explicit relationships generally have larger weights than those of implicit relationships. Alto-gether, the generally small weights of the implicit relations (and therefore their influence on the template) emphasize the need of composing the triplet (Subject, Relationship, Object) as a whole rather than modeling the Relationship alone.</p><formula xml:id="formula_13">[ O c x , O c y , O b x , O b y ] ∈ R 4 .</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Conclusions</head><p>Overall, this paper provides insight into the fundamental differences between implicit and explicit spatial language and extends the concept of spatial templates to implicit spatial language, the understanding of which requires common sense spatial knowledge about objects and actions. We define the task of predicting relative spatial arrangements of two objects under a relationship and present two embedding-based neural models that attain promising performance, proving that spatial templates can be accurately predicted from implicit spatial language. Remarkably, our models generalize well, predicting correctly unseen (generalized) object-relationshipobject combinations. Furthermore, the acquired common sense spatial knowledge-aided with word embeddingsallows the model to correctly predict templates for unseen words. Finally, we show that the weights of the model provide great insight into the spatial connotations of words.</p><p>A first limitation of our approach is the fully supervised setting where the models are trained using images with detected ground truth objects and parsed text-which aims at keeping the design clean in this first study on implicit spatial templates. Notice however that methods to automatically parse images and text exist. In future work, we aim at implementing our approach in a weakly supervised setting. A second limitation is the 2D spatial treatment of the actual 3D world. It is worth noting however, that our models (PIX and REG) and setting trivially generalize to 3D if appropriate data are available.</p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Overview of our models (left) and the image preprocessing setting (right).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head></head><label></label><figDesc>(i) Input and representation layers. An embedding layer maps the three input words (S, R, O) to their respective</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head></head><label></label><figDesc>left). • Model 1 (REG). A regression model where the output are the Object coordinates and sizeŷ = z out = [ O c , O b ] ∈ R 4 and is evaluated against the true y = [O c , O b ] with a mean squared error (MSE) loss: L(y,ŷ) = ŷ − y 2 .</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Sample of images with object boxes and relationships from Visual Genome.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>( i )</head><label>i</label><figDesc>Coefficient of Determination (R 2 ) of model predictionŝ y = [ O c , O b ] and ground truth y = [O c , O b ]. R 2 is widely used to evaluate goodness of fit of a model in regression. The best R 2 score is 1 while the worst one is arbitrarily negative. A constant prediction would obtain a score of 0. (ii) Pearson Correlation (r) between the predicted O c x and the true O c x x-component of the Object center. Similarly for the y-components O c y and O c y .</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Model predictions for generalized words (top) and triplets (bottom). Model (PIX, REG) and embedding types (EMB, RND) are as indicated in the legend on the left. The Subject's location is given (blue box) and the model predicts the Object (red). In PIX, the intensity of the red corresponds to the predicted probability. The generalized (unseen) words are underlined.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Weights in absolute value of the REG model for implicit (top) and explicit (bottom) Relationships. For readability, the labels on the x-axis have been undersampled.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head></head><label></label><figDesc>; Lin and Parikh 2015;</figDesc><table><row><cell></cell><cell>Target</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell>Learning</cell><cell>Composition layer(s) Concatenate</cell><cell>Predict</cell><cell>(S c x , S c y)</cell><cell>1) Re-scale coordinates 2) Mirror Image (if needed)</cell><cell>Image Pre-Processing</cell></row><row><cell></cell><cell>Embedding</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>layer</cell><cell></cell><cell></cell><cell></cell><cell></cell></row><row><cell></cell><cell>Input (text)</cell><cell>man flying kite Obj. Rel. Subj.</cell><cell></cell><cell></cell><cell></cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 1 :</head><label>1</label><figDesc>Results on the Raw test data.</figDesc><table /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 2 :</head><label>2</label><figDesc>Results on generalized triplets (top) and generalized words (bottom) (see Sect. 4.2). The tables on the right show results on the same sets without imposing generalization conditions, i.e., allowing to see all combinations/words during training. margin thanks to the transference of knowledge from word embeddings combined with the acquired spatial knowledge.</figDesc><table /></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_6"><head>Table 3 :</head><label>3</label><figDesc>Words with the ten largest (top) and smallest (bottom) weights in absolute value for the Object's y-coordinate ( O c y ), in implicit and explicit language (learned in Raw data).</figDesc><table /></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1">Some prepositions (e.g., "on") might be ambiguous as they can express other circumstantial arguments such as time. Here, we refer to spatial prepositions once they have been disambiguated as such.The Thirty-Second AAAI Conference on Artificial Intelligence </note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="3">Similarly, z h can be composed with more hidden layers.</note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="4">This evaluation set along with our Supplementary material are available at https://github.com/gcollell/spatial-commonsense.5  The complete list of objects is: [surfboard, shadow, head, surfer, woman, bear, bag, sunglasses, hair, apple, grass, water, eye, shoes, foot, jeans, jacket, bus, bike, cat, sky, elephant, tree, plane, eyes].6  We also evaluated a list of generalized Relationships, obtaining similar results. We additionally tested two extra lists of generalized objects, which yielded consistent results.</note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="8">http://nlp.stanford.edu/projects/glove</note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="9">Unlike PIX, the REG model directly outputs coordinates and thus allows for an easy interpretation of the weights.</note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Acknowledgments</head><p>This work has been supported by the CHIST-ERA EU project MUSTER 10 and by the KU Leuven grant RUN/15/005. G.C. additionally acknowledges a grant from the IV&amp;L network 11 (ICT COST Action IC1307).</p></div>
+			</div>
+
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<title/>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">F</forename><surname>Chollet</surname></persName>
+		</author>
+		<ptr target="https://github.com/fchollet/keras" />
+		<imprint>
+			<date type="published" when="2015" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Qualitative spatial representation and reasoning</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><forename type="middle">G</forename><surname>Cohn</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Renz</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Handbook of Knowledge Representation</title>
+		<editor>van Harmelen, F.</editor>
+		<editor>Lifschitz, V.</editor>
+		<editor>and Porter, B. W.</editor>
+		<imprint>
+			<publisher>Elsevier</publisher>
+			<date type="published" when="2008" />
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="page" from="551" to="596" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Is an image worth more than a thousand words? On the fine-grain semantic differences between visual and linguistic representations</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G</forename><surname>Collell</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M.-F</forename><surname>Moens</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">COLING</title>
+		<imprint>
+			<publisher>ACL</publisher>
+			<date type="published" when="2016" />
+			<biblScope unit="page" from="2807" to="2817" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">Image description using visual dependency representations</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Elliott</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">F</forename><surname>Keller</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">EMNLP</title>
+		<imprint>
+			<date type="published" when="2013" />
+			<biblScope unit="volume">13</biblScope>
+			<biblScope unit="page" from="1292" to="1302" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">The PASCAL visual object classes challenge: A retrospective</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Everingham</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><forename type="middle">A</forename><surname>Eslami</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L</forename><surname>Van Gool</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><forename type="middle">K</forename><surname>Williams</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Winn</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Zisserman</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">International Journal of Computer Vision</title>
+		<imprint>
+			<biblScope unit="volume">111</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="98" to="136" />
+			<date type="published" when="2015" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>Gregor</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">I</forename><surname>Danihelka</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Graves</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><forename type="middle">J</forename><surname>Rezende</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Wierstra</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1502.04623</idno>
+		<title level="m">Draw: A recurrent neural network for image generation</title>
+		<imprint>
+			<date type="published" when="2015" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Grounding spatial relations for human-robot interaction</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Guadarrama</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L</forename><surname>Riano</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Golland</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Go</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Y</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Klein</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Abbeel</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Darrell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IROS</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2013" />
+			<biblScope unit="page" from="1640" to="1647" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Global machine learning for spatial ontology population</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Kordjamshidi</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M.-F</forename><surname>Moens</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Web Semantics</title>
+		<imprint>
+			<biblScope unit="volume">30</biblScope>
+			<biblScope unit="page" from="3" to="21" />
+			<date type="published" when="2015" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<monogr>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Kordjamshidi</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Rahgooy</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M.-F</forename><surname>Moens</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Pustejovsky</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">U</forename><surname>Manzoor</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>Roberts</surname></persName>
+		</author>
+		<title level="m">Multimodal spatial role labeling (mSpRL) task overview. In CLEF</title>
+		<imprint>
+			<date type="published" when="2017" />
+			<biblScope unit="page" from="367" to="376" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Visual genome: Connecting language and vision using crowdsourced dense image annotations</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Krishna</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Y</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">O</forename><surname>Groth</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Johnson</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">K</forename><surname>Hata</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Kravitz</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">Y</forename><surname>Kalantidis</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">L.-J</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><forename type="middle">A</forename><surname>Shamma</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">International Journal of Computer Vision</title>
+		<imprint>
+			<biblScope unit="volume">123</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="32" to="73" />
+			<date type="published" when="2017" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Situated dialogue and spatial organization: What, where and why?</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G.-J</forename><forename type="middle">M</forename><surname>Kruijff</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">H</forename><surname>Zender</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">P</forename><surname>Jensfelt</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">H</forename><forename type="middle">I</forename><surname>Christensen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">International Journal of Advanced Robotic Systems</title>
+		<imprint>
+			<biblScope unit="volume">4</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page">16</biblScope>
+			<date type="published" when="2007" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Don&apos;t just listen, use your imagination: Leveraging visual common sense for non-visual tasks</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">X</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><surname>Parikh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="2984" to="2993" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<title level="m" type="main">A computational analysis of the apprehension of spatial relations. Language and space</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">G</forename><forename type="middle">D</forename><surname>Logan</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">D</forename><forename type="middle">D</forename><surname>Sadler</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="1996" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Fully convolutional networks for semantic segmentation</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Long</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">E</forename><surname>Shelhamer</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Darrell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2015" />
+			<biblScope unit="page" from="3431" to="3440" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<title level="m" type="main">A pooling approach to modelling spatial relations for image retrieval and annotation</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Malinowski</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Fritz</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1411.5190</idno>
+		<imprint>
+			<date type="published" when="2014" />
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Spatial reference in linguistic human-robot interaction: Iterative, empirically supported development of a model of projective relations</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Moratz</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">T</forename><surname>Tenbrink</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Spatial Cognition and Computation</title>
+		<imprint>
+			<biblScope unit="volume">6</biblScope>
+			<biblScope unit="issue">1</biblScope>
+			<biblScope unit="page" from="63" to="107" />
+			<date type="published" when="2006" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Glove: Global vectors for word representation</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Pennington</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Socher</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">In EMNLP</title>
+		<imprint>
+			<biblScope unit="volume">14</biblScope>
+			<biblScope unit="page" from="1532" to="1543" />
+			<date type="published" when="2014" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Vision-language fusion for object recognition</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S.-R</forename><surname>Shiang</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">S</forename><surname>Rosenthal</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Gershman</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><forename type="middle">G</forename><surname>Carbonell</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Oh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">AAAI</title>
+		<imprint>
+			<date type="published" when="2017" />
+			<biblScope unit="page" from="4603" to="4610" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">Probabilistic spatial context models for scene content understanding</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Singhal</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">J</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">W</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><surname>; I-I</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><surname>Ieee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">CVPR</title>
+		<imprint>
+			<date type="published" when="2003" />
+			<biblScope unit="volume">1</biblScope>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Zero-shot learning through cross-modal transfer</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">R</forename><surname>Socher</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Ganjoo</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">C</forename><forename type="middle">D</forename><surname>Manning</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Ng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">NIPS</title>
+		<imprint>
+			<date type="published" when="2013" />
+			<biblScope unit="page" from="935" to="943" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<analytic>
+		<title level="a" type="main">Stating the obvious: Extracting visual common sense knowledge</title>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">M</forename><surname>Yatskar</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">V</forename><surname>Ordonez</surname></persName>
+		</author>
+		<author>
+			<persName xmlns="http://www.tei-c.org/ns/1.0"><forename type="first">A</forename><surname>Farhadi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">NAACL-HLT</title>
+		<imprint>
+			<date type="published" when="2016" />
+			<biblScope unit="page" from="193" to="198" />
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>
