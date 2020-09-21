@@ -71,13 +71,9 @@ def create_MindMap(headings_name, headings_para): #list of headings and list of 
     net = Network("The Visual Research Paper")
     root = "Your Visual Research Paper"
     #root_id = 1
-    net.add_node(root, shape = "circle", value = 5000, title = root)
+    net.add_node(root, shape = "circle", value = 5000, title = root, color = 'ffb3bf', fill = "pink")
     #print(net.nodes)
     #id = 2
-    for node in headings_name:
-        net.add_node(node, shape = "ellipse", value = 3000, title = node, label = node)
-        net.add_edge(root, node, weight=.97)
-        #id += 1
     nodes_list = []
     for i in headings_name:
         nodes = []
@@ -88,11 +84,15 @@ def create_MindMap(headings_name, headings_para): #list of headings and list of 
                     nodes.append(item[key])
         nodes_list.append(nodes)
 
-    for node in nodes_list:
-        for item in node:
-            net.add_node(item, shape = "textbox", value = (len(node)*100), title = item)
-            net.add_edge(key, item, weight=.87)
-    #print(net.nodes)
+    for node in headings_name:
+        net.add_node(node, shape = "ellipse", value = 3000, title = node, label = node, color = 'b37d8b', fill = "red")
+        net.add_edge(root, node, weight=.97)
+        for x in nodes_list:
+            for item in x:
+                net.add_node(item, shape = "textbox", value = (len(node)*100), title = item, color = 'ffecf1')
+                net.add_edge(node, item, weight=.87)
+
+    print(net.nodes)
     net.toggle_physics(True)
     net.show_buttons(filter_=['physics'])
     net.show("mindmap.html")
