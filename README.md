@@ -1,6 +1,7 @@
 # Visual Reasearch Paper
 ### Project for IntraMIC Hack September 2020
 <hr>
+
 ## Research Papers are Boring!
     
    ### Objective: 
