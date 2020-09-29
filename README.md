@@ -32,4 +32,6 @@
    1. Extract figures and tables to add its labels to image nodes containing figure/table
    2. Extract formulas to add as separate nodes
    3. Generate a cleaner mind map 
+   
+   ![](beryllium.gif)
 
