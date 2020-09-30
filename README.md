@@ -7,7 +7,9 @@
    ### Objective: 
 
    Take a pdf of a research paper and generate a comprehensive mind map as a means of visual summarization. 
-
+   
+   ![](beryllium1.gif)
+   
    ### Components:
    1. Extract the structured text from the pdf
         ##### Input: PDF
